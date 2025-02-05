@@ -1,0 +1,100 @@
+const scriptName  = "유저전적검색";
+
+var key = "test_ca7bace387ecf3be1d2388b7ca18e6421f2c8ba0d9c1067e856ae713b4c20b0cefe8d04e6d233bd35cf2fabdeb93fb0d";
+var name = "";
+var is_error = 0;
+
+function getNickname(msg){
+        var ovo = msg.split(" ");
+        var nickname = ovo[1];
+   return nickname;
+}
+
+function getUserID(replier, msg){
+   if (msg.startsWith("!전적")){
+     var nickname = getNickname(msg); 
+     replier.reply("[ "+nickname+" ] 전적 검색중...");
+   }
+   
+   var url ="https://open.api.nexon.com/fconline/v1/id?";
+   var doc=JSON.parse(org.jsoup.Jsoup.connect(url+"nickname="+nickname).header("x-nxopen-api-key", key).ignoreContentType(true).get().text());
+
+   var ouid = doc["ouid"];
+   return ouid;
+}
+
+function getMatchId(replier, msg){
+   var url ="https://open.api.nexon.com/fconline/v1/user/match?";
+   try{
+   var ouid = getUserID(replier, msg);
+      var doc=JSON.parse(org.jsoup.Jsoup.connect(url+"ouid="+ouid+"&matchtype=52&offset=0&limit=30").header("x-nxopen-api-key",    key).ignoreContentType(true).get().text());
+      var resultList = Array.isArray(doc) ? doc : [];
+    } catch(error){
+   replier.reply("사용자를 찾을 수 없습니다. 올바르게 입력했는지 확인해 주세요.");
+   is_error = 1;
+    }
+      return resultList;
+}
+
+
+function getUserInfo(replier, msg){
+   var url = "https://open.api.nexon.com/fconline/v1/match-detail?";
+   var nickname = getNickname(msg); 
+   try{
+      var mIdLst = getMatchId(replier, msg);
+
+       var i=0; var tot=30; var win=0; var lose=0; var draw=0;
+       var n=0; var prntStr="";
+   
+           for (i=0; i<30; i++){
+            var matchId = mIdLst[i];
+            var doc=JSON.parse(org.jsoup.Jsoup.connect(url+"matchid="+matchId).header("x-nxopen-api-key", key).ignoreContentType(true).get().text());
+            n=0;
+            if (doc["matchInfo"][0]["nickname"]!=nickname){n = 1;}
+            var p1=""; var p2="";
+            p1 = doc["matchInfo"][n]["nickname"];
+
+            var mtype1 = doc["matchInfo"][n]['matchDetail']['matchEndType'];
+            try{
+               p2 = doc["matchInfo"][1-n]["nickname"];
+               var mtype2 = doc["matchInfo"][1-n]['matchDetail']['matchEndType'];
+           }
+            catch(error){  }
+      
+            if (mtype1==2 || mtype1==4){
+                    prntStr += String(i+1)+". "+p1+"(몰수패)"+"\n";
+                    lose += 1;
+            }  else if (mtype2==2 || mtype2==4){
+                    prntStr += String(i+1)+". "+p1+"(몰수승)"+"\n";
+                    win += 1;
+            } else {
+                  var wl1 =  doc["matchInfo"][n]["matchDetail"]["matchResult"];
+                  var sc1 = doc["matchInfo"][n]["shoot"]["goalTotal"];
+                  var wl2 =  doc["matchInfo"][1-n]["matchDetail"]["matchResult"];
+                  var sc2 = doc["matchInfo"][1-n]["shoot"]["goalTotal"];
+
+               if (wl1=="승"){
+                    win+=1;   
+               } else if (wl1=="패"){
+                     lose+=1;
+               }
+               prntStr += String(i+1)+". "+p1+"("+wl1+")"+String(sc1)+" : "+String(sc2)+"("+wl2+")"+p2+"\n";
+            }}
+   prntStr += "\n최근 전적 승률:"+String(Math.round(win/tot*100*10)/10)+"% | W:"+String(win)+" / D:"+String(tot-win-lose)+ " / L:"+String(lose);
+   replier.reply(prntStr);
+   } catch(error){ 
+     if (!is_error){
+        replier.reply("오류가 발생했습니다. FcOnline 서버가 점검중일경우 사용 불가합니다.");}   
+     }
+}
+
+
+// 실행
+function response(room, msg, sender, isGroupChat, replier, imageDB, packageName) {
+   if (msg.startsWith("!전적")){
+      getUserInfo(replier, msg);
+   }
+   if (msg=="!hi"){
+      replier.reply(msg);
+   }
+}

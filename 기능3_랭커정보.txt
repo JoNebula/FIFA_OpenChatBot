@@ -1,0 +1,42 @@
+const scriptName  = "랭커정보조회";
+
+var name = "";
+var rank = "";
+var price = "";
+var wrate = "";
+var wpoint = "";
+var prntInfo = "";
+
+var txt = "";
+
+function getRankerInfo(replier, msg){
+   prntInfo = "";
+   var url ="https://fconline.nexon.com/datacenter/rank_m";
+   try{
+      var doc=org.jsoup.Jsoup.connect(url).get();
+   } catch(error){ 
+        replier.reply("오류가 발생했습니다. FcOnline 서버가 점검중일경우 사용 불가합니다."); 
+        return; }
+   
+   var i;
+
+   for(i=0; i<20; i++){
+      name = doc.select("span.name.profile_pointer").get(i).text();
+      rank = doc.select("span.td.rank_no").get(i).text();
+      //price = doc.select("span.price").get(i).text();
+      //wrate = doc.select("span.td.rank_r_rate").get(i).text();
+      wpoint = doc.select("span.td.rank_r_win_point").get(i).text();
+      prntInfo += rank+"위 "+wpoint+"점"+" | "+ name+"\n";
+   }
+
+   txt = doc.select("p.rank_advice").text();
+   prntInfo += "\n"+txt;
+   replier.reply(prntInfo);
+}
+
+// 실행
+function response(room, msg, sender, isGroupChat, replier, imageDB, packageName) {
+   if (msg=="!슈챔"){
+        getRankerInfo(replier, msg); 
+      }
+}
