@@ -1,6 +1,6 @@
 const scriptName  = "유저전적검색";
 
-var key = "test_ca7bace387ecf3be1d2388b7ca18e6421f2c8ba0d9c1067e856ae713b4c20b0cefe8d04e6d233bd35cf2fabdeb93fb0d";
+var key = "INSERT_YOUR_OWN_API_KEY";
 var name = "";
 var is_error = 0;
 
